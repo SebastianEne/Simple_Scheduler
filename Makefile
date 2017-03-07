@@ -2,7 +2,7 @@ CC 		= gcc
 C_SRCS 	= $(wildcard src/*.c)
 OBJ 	= $(patsubst src/%.c, obj/%.o, $(C_SRCS))
 INCLUDES= include/
-CFLAGS 	= -Wall
+CFLAGS 	= -g -Wall
 
 sched: $(OBJ)
 		$(CC) $(CFLAGS) $(OBJ) -o sched

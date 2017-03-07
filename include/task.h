@@ -1,8 +1,9 @@
 #ifndef __TASK_H
 #define __TASK_H
+#define _XOPEN_SOURCE
 
 #include <stdint.h>
-
+#include <ucontext.h>
 
 #define TASK_SIZE           2048
 
@@ -41,6 +42,7 @@ typedef struct cpu_s cpu_t;
 struct task_s {
     cpu_t           state;          // CPU state with all registers
     task_state_t    task_state;     // The state of the current task
+    ucontext_t      task_context;   // The task context
     int             priority;       // The task's priority. (0 - highest)
 };
 

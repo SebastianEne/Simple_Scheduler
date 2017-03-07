@@ -5,6 +5,9 @@
 #include <time.h>
 #include <signal.h>
 
+#include "task.h"
+
+
 /* Private types definitions. */
 
 struct rtc_timer 
@@ -12,6 +15,7 @@ struct rtc_timer
     clock_t last_time;
     int rtc_period;
 };    
+
 
 /* Private function definitions. */
 
@@ -36,9 +40,10 @@ struct rtc_timer timsk = {
 };
 
 struct sigaction rtc_action = {
-    .__sigaction_u   = sig_handler,
+    .__sigaction_u.__sa_sigaction   = sig_handler,
     .sa_flags        = SA_SIGINFO
 };
+
 
 /* Public variables. */
 
@@ -48,7 +53,7 @@ volatile int g_cpu_active;
 /* Private function implementation. */
 static void sig_handler(int sig_type, siginfo_t *info, void *context)
 {
-   printf("Called signal handler %p!\n",pthread_self()); 
+   ucontext_t *task_context = (ucontext_t *) context;
 }
 
 static void rtc_sim(void *not_used)
@@ -91,6 +96,7 @@ void sig_handler_cancel(int signo)
     g_cpu_active = 0;
 }
 
+
 /* Public function implementation. */
 
 void hardware_init(void)
@@ -99,7 +105,7 @@ void hardware_init(void)
 
     g_cpu_active = 1;
 
-    timer_create(clock(), 1000);
+    timer_create(clock(), 100);
     
     if (signal(SIGINT, sig_handler_cancel) == SIG_ERR)
         printf("\ncan't catch SIGSTOP\n");
@@ -113,7 +119,7 @@ void hardware_init(void)
 
     current_pid = getpid();
 
-    ret = pthread_create(&rtc_thread, NULL, rtc_sim, NULL);
+    ret = pthread_create(&rtc_thread, NULL, (void *(*)(void *))rtc_sim, NULL);
     if (ret < 0)
         {
             fprintf(stderr, "Cannot create thread\n");
@@ -125,6 +131,8 @@ void hardware_run(void)
 {
     while(g_cpu_active)
         {
+            sleep(1);
+            printf("[CPU]   Running CPU\n");
         }
 }
 
@@ -134,7 +142,7 @@ void hardware_suspend(void)
 
     fprintf(stdout, "\n[CPU] hardware power off !\n");
 
-    ret = pthread_join(&rtc_thread, NULL);
+    ret = pthread_join(rtc_thread, NULL);
     if (ret < 0)
         {
             fprintf(stderr, "Cannot join thread\n");
