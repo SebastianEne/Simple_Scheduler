@@ -5,6 +5,8 @@
 
 void scheduler_initialize(void);
 
+struct task_s *scheduler_get_next_context(void);
+
 void scheduler_do_run(void);
 
 void scheduler_add_task(struct task_s *task);

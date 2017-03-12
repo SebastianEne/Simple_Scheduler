@@ -37,6 +37,8 @@ struct cpu_s
     uint64_t R15;
 };
 
+typedef void (*t)(void);
+
 typedef struct cpu_s cpu_t;
 
 struct task_s {
@@ -44,6 +46,7 @@ struct task_s {
     task_state_t    task_state;     // The state of the current task
     ucontext_t      task_context;   // The task context
     int             priority;       // The task's priority. (0 - highest)
+    t               entry_point;
 };
 
 
