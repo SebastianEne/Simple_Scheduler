@@ -91,7 +91,8 @@ static void sig_handler(int sig_type, siginfo_t *info, void *context)
 
    for (int i = 0; i < 17; ++i)
      {
-   task_context->uc_mcontext.gregs[i] = scheduler_get_next_context()->task_context.uc_mcontext.gregs[i];
+       task_context->uc_mcontext.gregs[i] =
+         scheduler_get_next_context()->task_context.uc_mcontext.gregs[i];
      }
 }
 
@@ -120,7 +121,7 @@ static void rtc_interrupt(void)
 {
     int ret;
 
-    printf("[INT]   RTC_CLOCK send signal to interrupt main thread\n");
+    printf("[INT] send signal to interrupt main thread\n");
 
     ret = kill(current_pid, SIGINFO);
     if (ret < 0)
@@ -133,6 +134,7 @@ static void rtc_interrupt(void)
 void sig_handler_cancel(int signo)
 {
     g_cpu_active = 0;
+    fprintf(stdout, "\n[Halt] Simulation canceled\n");
     exit(1);
 }
 
@@ -174,8 +176,6 @@ void hardware_run(void)
         {
             scheduler_do_run();
         }
-
-    hardware_suspend();
 }
 
 void hardware_suspend(void)
