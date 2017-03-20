@@ -1,28 +1,25 @@
 #include <stdio.h>
+#include <unistd.h>
 #include <time.h>
 #include <semaphore.h>
+#include <assert.h>
 
 #include "simple_sched.h"
+#include "queue.h"
 
 
 #define DISABLE_INT             sem_wait(&g_sem_init);
 
 #define ENABLE_INT              sem_post(&g_sem_init);
 
-#define NUM_TASKS               2
-
-static void t1(void);
-
-static void t2(void);
-
 
 static sem_t   g_sem_init;
 
-static struct task_s running_task[NUM_TASKS];
+static struct queue_s *pending_tasks;
 
 static struct task_s current_task;
 
-static int task_index;
+static volatile int num_tasks;
 
 
 static void t1(void)
@@ -43,47 +40,35 @@ static void t2(void)
     }
 }
 
+static void build_demo_tasks(int num_tasks)
+{
+  struct task_s *task_1, *task_2;
+
+  assert(num_tasks >= 0);
+
+  task_1 = create_task(1, 2048, t1);
+  pending_tasks = enqueue(pending_tasks, task_1, sizeof(struct task_s));
+
+  task_2 = create_task(1, 2048, t2);
+  pending_tasks = enqueue(pending_tasks, task_2, sizeof(struct task_s));
+
+  current_task = *task_1;
+}
+
+
 /* Build and initialized a new scheduler create tasks
  * list. */
 void scheduler_initialize(void)
 {
     int ret;
-    char t1_stack[2048];
-    char t2_stack[2048];
 
-    ret = getcontext(&running_task[0].task_context);
-    if (ret < 0)
-      {
-        fprintf(stderr, "Cannot get context\n");
-        return;
-      }
-
-    running_task[0].task_context.uc_stack.ss_sp = t1_stack;
-    running_task[0].task_context.uc_stack.ss_size = sizeof(t1_stack);
-    running_task[0].entry_point = t1;
-
-    makecontext(&running_task[0].task_context, t1, 0);
-
-    ret = getcontext(&running_task[1].task_context);
-    if (ret < 0)
-      {
-        fprintf(stderr, "Cannot get context\n");
-        return;
-      }
-
-    running_task[1].task_context.uc_stack.ss_sp = t2_stack;
-    running_task[1].task_context.uc_stack.ss_size = sizeof(t2_stack);
-    running_task[1].entry_point = t2;
-
-    makecontext(&running_task[1].task_context, t2, 0);
-
-    current_task.entry_point = running_task[0].entry_point;
+    build_demo_tasks(2);
 
     ret = sem_init(&g_sem_init, 0, 1);
     if (ret < 0)
         {
-            fprintf(stderr, "Cannot build semaphore");
-            return;
+          fprintf(stderr, "Cannot build semaphore");
+          return;
         }
 }
 
@@ -98,10 +83,8 @@ void scheduler_add_task(struct task_s *task)
 
 struct task_s *scheduler_get_next_context(void)
 {
-  task_index++;
-  task_index = task_index % NUM_TASKS;
-
-  return &running_task[task_index];
+  pending_tasks = rotate(pending_tasks);
+  return (struct task_s *)pending_tasks->data;
 }
 
 /* Removes a new task from the task list. This should disable

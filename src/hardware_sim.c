@@ -53,8 +53,6 @@ static void rtc_interrupt(void);
 
 static void sig_handler(int sig_type, siginfo_t *info, void *context);
 
-static void sig_restore(void);
-
 
 /* Private variables. */
 
@@ -88,11 +86,11 @@ static void sig_handler(int sig_type, siginfo_t *info, void *context)
    printf("[INT] RTC interrupt\n");
 
    ucontext_t *task_context = (ucontext_t *) context;
-
+   struct task_s *next_task = scheduler_get_next_context();
+ 
    for (int i = 0; i < 17; ++i)
      {
-       task_context->uc_mcontext.gregs[i] =
-         scheduler_get_next_context()->task_context.uc_mcontext.gregs[i];
+       task_context->uc_mcontext.gregs[i] = next_task->task_context.uc_mcontext.gregs[i];
      }
 }
 
