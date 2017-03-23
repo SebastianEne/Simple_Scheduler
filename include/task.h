@@ -19,17 +19,17 @@ enum task_state_e
 
 typedef enum task_state_e task_state_t;
 
-typedef void (*t)(void);
-
-
 struct task_s {
     task_state_t    task_state;     // The state of the current task
     ucontext_t      task_context;   // The task context
     int             priority;       // The task's priority. (0 - highest)
     void           *stack;          // The task's stack address.
     ssize_t         stack_size;     // The size of the stack.
-    t               entry_point;    // The task's entry point.
+    void           *entry_point;    // The task's entry point.
+    int             pid;            // The rask pid.
 };
+
+typedef void (*t)(const struct task_s * const task);
 
 
 struct task_s *create_task(int priority, ssize_t stack_size, t entry_point);

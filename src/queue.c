@@ -54,7 +54,7 @@ struct queue_s *dequeue(struct queue_s *q)
 
 struct queue_s *rotate(struct queue_s *q)
 {
-  struct queue_s *first, *before_first, *before_last;
+  struct queue_s *first, *before_first;
 
   if (q == NULL)
     {
@@ -71,12 +71,11 @@ struct queue_s *rotate(struct queue_s *q)
 
   while (q->head != NULL)
     {
-      before_last = q;
       q = q->head;
     }
 
-  before_last->head = before_first;
   before_first->head = NULL;
+  q->head = before_first;
 
   if (first->head == NULL)
     {

@@ -1,13 +1,18 @@
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
 
 #include "task.h"
 
+
+static int task_num;
 
 struct task_s *create_task(int priority, ssize_t stack_size, t entry_point)
 {
   struct task_s *task;
   int ret;
+  char task_name[20];
+  char *argv[2];
 
   assert(entry_point != NULL);
 
@@ -18,10 +23,11 @@ struct task_s *create_task(int priority, ssize_t stack_size, t entry_point)
       return task;
     }
 
-  task->task_state = INACTIVE;
-  task->priority = priority;
-  task->stack_size = stack_size;
+  task->task_state  = INACTIVE;
+  task->priority    = priority;
+  task->stack_size  = stack_size;
   task->entry_point = entry_point;
+  task->pid         = task_num++;
 
   task->stack = malloc(task->stack_size);
   if (task->stack == NULL)
@@ -39,10 +45,14 @@ struct task_s *create_task(int priority, ssize_t stack_size, t entry_point)
       return NULL;
     }
 
-  task->task_context.uc_stack.ss_sp = task->stack;
+  task->task_context.uc_stack.ss_sp   = task->stack;
   task->task_context.uc_stack.ss_size = task->stack_size;
 
-  makecontext(&task->task_context, task->entry_point, 0);
+  memset(task_name, 0, sizeof(task_name));
+  snprintf(task_name, sizeof(task_name), "task %d", task->pid);
+  *argv = task_name;
+
+  makecontext(&task->task_context, task->entry_point, 1, task);
 
   return task;
 }

@@ -3,6 +3,7 @@
 #include <time.h>
 #include <semaphore.h>
 #include <assert.h>
+#include <string.h>
 
 #include "simple_sched.h"
 #include "queue.h"
@@ -19,40 +20,40 @@ static struct queue_s *pending_tasks;
 
 static struct task_s current_task;
 
-static volatile int num_tasks;
-
-
-static void t1(void)
+static void t1(const struct task_s * const task)
 {
+
   while (1)
     {
-      printf("[t1] runs !\n");
-      sleep(1);
-    }
-}
-
-static void t2(void)
-{
-  while (1)
-    {
-      printf("[t2] runs !\n");
-      sleep(1);
+      printf("[task %d] runs !\n", task->pid);
+      while (1)
+        {
+          ;;
+        }
     }
 }
 
 static void build_demo_tasks(int num_tasks)
 {
-  struct task_s *task_1, *task_2;
+  struct task_s **task;
+  int i;
 
   assert(num_tasks >= 0);
 
-  task_1 = create_task(1, 2048, t1);
-  pending_tasks = enqueue(pending_tasks, task_1, sizeof(struct task_s));
+  task = (struct task_s **) malloc(sizeof(struct task_s) * num_tasks);
+  if (task == NULL)
+    {
+      fprintf(stderr, "ERROR: Cannot build demo tasks\n");
+      return;
+    }
 
-  task_2 = create_task(1, 2048, t2);
-  pending_tasks = enqueue(pending_tasks, task_2, sizeof(struct task_s));
+  for (i = 0; i < num_tasks; ++i)
+    {
+      task[i] = create_task(1, 2048, t1);
+      pending_tasks = enqueue(pending_tasks, task[i], sizeof(struct task_s));
+    }
 
-  current_task = *task_1;
+  current_task = *task[0];
 }
 
 
@@ -62,7 +63,7 @@ void scheduler_initialize(void)
 {
     int ret;
 
-    build_demo_tasks(2);
+    build_demo_tasks(10);
 
     ret = sem_init(&g_sem_init, 0, 1);
     if (ret < 0)
@@ -103,7 +104,7 @@ void scheduler_do_run(void)
 {
     DISABLE_INT;
 
-    current_task.entry_point();
+    ((t)current_task.entry_point)(&current_task);
 
     ENABLE_INT;
 }
